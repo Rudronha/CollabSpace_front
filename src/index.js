@@ -4,13 +4,16 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { SocketProvider } from './context/socketContext';
+import { WebRTCProvider } from './context/webRTContext';
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <SocketProvider>
-      <App />
+      <WebRTCProvider>
+        <App />
+      </WebRTCProvider>
     </SocketProvider>
   </React.StrictMode>
 );

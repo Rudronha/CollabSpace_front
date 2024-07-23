@@ -1,18 +1,21 @@
-import React, { useContext, useState } from 'react';
-import useWebRTC from './useWebRTC';
-import { SocketContext } from '../../context/socketContext';
-
-
+import React, { useContext, useState,useEffect } from 'react';
+import { WebRTContext } from '../../context/webRTContext';
 
 const VoiceCall = () => {
-    const {socket} = useContext(SocketContext);
-    const { localStreamRef, remoteStreamRef, isMuted, toggleMute, createOffer } = useWebRTC(socket);
+    
+    const { localStreamRef, remoteStreamRef, isMuted, toggleMute, createOffer } = useContext(WebRTContext);
     const [isCallActive, setIsCallActive] = useState(false);
 
     const handleCall = () => {
         setIsCallActive(!isCallActive);
         createOffer();
     };
+
+    useEffect(() => {
+        if (localStreamRef.current) {
+            console.log('localStreamRef assigned:', localStreamRef.current);
+        }
+    }, [localStreamRef]);
 
     return (
         <div>
@@ -23,7 +26,7 @@ const VoiceCall = () => {
             </button>
             <div>
                 <h2>Local Stream</h2>
-                <audio ref={localStreamRef} autoPlay muted />
+                <audio ref={localStreamRef} autoPlay muted={isMuted}/>
             </div>
             <div>
                 <h2>Remote Stream</h2>
