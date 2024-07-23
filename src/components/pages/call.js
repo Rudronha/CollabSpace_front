@@ -1,10 +1,9 @@
 import React from "react";
-
+import VoiceCall from "../voice_call/VoiceCall";
 const Call = () => {
     return (
         <div>
-            <button>Call</button>
-            <button>Mute</button>
+            <VoiceCall/>
         </div>
     );
 };

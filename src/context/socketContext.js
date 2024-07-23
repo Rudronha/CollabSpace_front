@@ -11,11 +11,11 @@ const SocketProvider = ({ children }) => {
   const [chatInput, setChatInput] = useState('');
   const [userId, setUserId] = useState(null);
   const socketRef = useRef();
-
+  const [socket,setSocket] = useState();
   useEffect(() => {
     // Connect to Socket.io server
-    socketRef.current = io('http://localhost:8080');
-
+    socketRef.current = io(process.env.REACT_APP_API_URL);
+    setSocket(socketRef.current);
     socketRef.current.on('connect', () => {
       setUserId(socketRef.current.id);  // Set the user ID to the socket ID
       console.log('Connected to server');
@@ -74,7 +74,7 @@ const SocketProvider = ({ children }) => {
     };
 
     return (
-        <SocketContext.Provider value={{ code, output, messages, userId,language, chatInput, handleChange, handleCompile, handleLanguageChange, handleSendMessage,setChatInput }}>
+        <SocketContext.Provider value={{ code, output, messages, userId,language, chatInput,socket, handleChange, handleCompile, handleLanguageChange, handleSendMessage,setChatInput }}>
             {children}
         </SocketContext.Provider>
     );
