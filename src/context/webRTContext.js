@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 
 const WebRTContext = createContext();
 const socket = io(process.env.REACT_APP_API_URL);
-console.log(process.env.REACT_APP_API_URL)
+console.log(process.env.REACT_APP_API_URL);
 const WebRTCProvider = ({ children }) => {
     const localStreamRef = useRef(null);
     const remoteStreamRef = useRef(null);
@@ -74,7 +74,7 @@ const WebRTCProvider = ({ children }) => {
             socket.off('answer');
             socket.off('candidate');
         };
-    }, [socket]);
+    }, []);
 
     const toggleMute = () => {
         if (localStreamRef.current && localStreamRef.current.srcObject) {
