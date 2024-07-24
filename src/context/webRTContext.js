@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, createContext } from 'react';
 import { io } from 'socket.io-client';
 
 const WebRTContext = createContext();
-
+const socket = io(process.env.REACT_APP_API_URL);
+console.log(process.env.REACT_APP_API_URL)
 const WebRTCProvider = ({ children }) => {
     const localStreamRef = useRef(null);
     const remoteStreamRef = useRef(null);
-    const socketRef = useRef();
     const pcRef = useRef(null);
     const [isMuted, setIsMuted] = useState(false);
 
@@ -16,7 +16,7 @@ const WebRTCProvider = ({ children }) => {
 
         pc.onicecandidate = event => {
             if (event.candidate) {
-                socketRef.current.emit('candidate', event.candidate);
+                socket.emit('candidate', event.candidate);
             }
         };
 
@@ -26,19 +26,16 @@ const WebRTCProvider = ({ children }) => {
             }
         };
     };
-
+   
     useEffect(() => {
-        socketRef.current = io(process.env.REACT_APP_VOICE_API_URL);
         if (!pcRef.current) {
             initPC();
         }
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
             .then(stream => {
-                console.log('Local stream obtained:', stream);
                 if (localStreamRef.current) {
                     localStreamRef.current.srcObject = stream;
-                    localStreamRef.current.muted = isMuted; // Set initial mute state
                 }
                 stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
             })
@@ -46,29 +43,21 @@ const WebRTCProvider = ({ children }) => {
                 console.error('Error obtaining local stream', error);
             });
 
-        socketRef.current.on('offer', async (offer) => {
-            try {
-                if (pcRef.current.signalingState !== 'stable') {
-                    return;
-                }
-                await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await pcRef.current.createAnswer();
-                await pcRef.current.setLocalDescription(answer);
-                socketRef.current.emit('answer', answer);
-            } catch (error) {
-                console.error('Error handling offer', error);
+        socket.on('offer', async (offer) => {
+            if (pcRef.current.signalingState !== 'stable') {
+                return;
             }
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pcRef.current.createAnswer();
+            await pcRef.current.setLocalDescription(answer);
+            socket.emit('answer', answer);
         });
 
-        socketRef.current.on('answer', async (answer) => {
-            try {
-                await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-            } catch (error) {
-                console.error('Error handling answer', error);
-            }
+        socket.on('answer', async (answer) => {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
-        socketRef.current.on('candidate', async (candidate) => {
+        socket.on('candidate', async (candidate) => {
             try {
                 await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
             } catch (error) {
@@ -81,18 +70,19 @@ const WebRTCProvider = ({ children }) => {
                 pcRef.current.close();
                 pcRef.current = null;
             }
-            socketRef.current.off('offer');
-            socketRef.current.off('answer');
-            socketRef.current.off('candidate');
+            socket.off('offer');
+            socket.off('answer');
+            socket.off('candidate');
         };
-    }, [isMuted]);
+    }, [socket]);
 
     const toggleMute = () => {
-        if (localStreamRef.current) {
-            localStreamRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
-        } else {
-            console.log('Local stream is not available');
+        if (localStreamRef.current && localStreamRef.current.srcObject) {
+            const audioTracks = localStreamRef.current.srcObject.getAudioTracks();
+            if (audioTracks.length > 0) {
+                audioTracks[0].enabled = !audioTracks[0].enabled;
+                setIsMuted(!audioTracks[0].enabled);
+            }
         }
     };
 
@@ -103,7 +93,7 @@ const WebRTCProvider = ({ children }) => {
         }
         const offer = await pcRef.current.createOffer();
         await pcRef.current.setLocalDescription(offer);
-        socketRef.current.emit('offer', offer);
+        socket.emit('offer', offer);
     };
 
     return (
